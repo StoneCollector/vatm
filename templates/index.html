@@ -49,14 +49,33 @@
         a:hover {
             text-decoration: underline;
         }
+        .flash-message {
+            animation: fadeOut 3s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            99% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
     </style>
 </head>
 
 <body>
+    {% include 'flash.html' %}
     <div class="container">
+        
         <h1>Welcome to the Virtual ATM</h1>
         <p><a href="/register">Register</a> | <a href="/login">Login</a></p>
     </div>
+    <script>
+        $(document).ready(function() {
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 3000); // Adjust the duration as needed
+        });
+    </script>
+    
 </body>
 
 </html>

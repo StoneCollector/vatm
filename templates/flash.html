@@ -1,75 +1,45 @@
+<style>.overlay {
+    display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+    position: fixed; /* Sit on top of the page content */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5); /* Black background with opacity */
+    z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
+    cursor: pointer; /* Add a pointer on hover */
+  }
+  .container {
+            padding: 30px;
+            width: 100%;
+            
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            border: 1px solid #ddd;
+        }
+</style>
 
-<!-- these are all flash messages in alert format-->
-
-{% if fmessage %}
-<script>
-    window.onload = function() {
-        alert("{{ fmessage }}");
-        window.location.href = "{{ url_for('atm') }}";
-    };
-</script>
-{% endif %}
-{% if accCreat %}
-<script>
-    window.onload = function() {
-        alert("{{ accCreat }}");
-        window.location.href = "{{ url_for('login') }}";
-    };
-</script>
-{% endif %}
-{% if gid %}
-<script>
-    window.onload = function() {
-        alert("{{ gid }}");
-        window.location.href = "{{ url_for('register') }}";
-    };
-</script>
-{% endif %}
-{% if loginfail %}
-<script>
-    window.onload = function() {
-        alert("{{ loginfail }}");
-        window.location.href = "{{ url_for('login') }}";
-    };
-</script>
-{% endif %}
-{% if rmessage %}
-<script>
-    window.onload = function() {
-        alert("{{ rmessage }}");
-        window.location.href = "{{ url_for('login') }}";
-    };
-</script>
-{% endif %}
-{% if logoutmsg %}
-<script>
-    window.onload = function() {
-        alert("{{ logoutmsg }}");
-        window.location.href = "{{ url_for('login') }}";
-    };
-</script>
-{% endif %}
-{% if forgotun %}
-<script>
-    window.onload = function() {
-        alert("{{ forgotun }}");
-        window.location.href = "{{ url_for('forgot_password') }}";
-    };
-</script>
-{% endif %}
-{% if forgotsuccess %}
-<script>
-    window.onload = function() {
-        alert("{{ forgotsuccess }}");
-        window.location.href = "{{ url_for('atm') }}";
-    };
-</script>
-{% endif %}
-{% if forgotfail %}
-<script>
-    window.onload = function() {
-        alert("{{ forgotfail }}");
-        window.location.href = "{{ url_for('forgot_password') }}";
-    };
-</script>
-{% endif %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} flash-message overlay">
+                    <div class = "container mt-3">{{ message }}</div>
+                </div>
+            {% endfor %}
+        
+    {% endif %}
+{% endwith %}
+    <script>
+        // Redirect after a set timeout, you can customize this as needed
+        setTimeout(function() {
+        }, 3000); // Redirect after 3 seconds
+    </script>
+</body>
+</html>

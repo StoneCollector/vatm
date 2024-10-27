@@ -2,12 +2,8 @@ import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 
-
-
 app = Flask(__name__)
-app.secret_key = 'your_secret_key' 
-
-
+app.secret_key = 'your_secret_key'
 
 def init_db():
     conn = sqlite3.connect('atm.db')
@@ -17,7 +13,7 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
         password TEXT NOT NULL,
-        gov_id TEXT NOT NULL UNIQUE,  -- Ensure this is unique
+        gov_id TEXT NOT NULL UNIQUE,
         balance REAL DEFAULT 0,
         dob TEXT NOT NULL,
         age INTEGER NOT NULL,
@@ -43,14 +39,9 @@ def init_db():
 
 init_db()
 
-
-
 @app.route('/')
 def index():
     return render_template('index.html')
-    
-
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -70,37 +61,31 @@ def register():
         initial_deposit = float(request.form['balance'])
 
         if not username or not password or not gov_id:
-            flash('All fields are required.')
+            flash('All fields are required.', 'danger')
             return redirect(url_for('register'))
 
-        
         conn = sqlite3.connect('atm.db')
         c = conn.cursor()
-
-        
         c.execute('SELECT id FROM accounts WHERE gov_id = ?', (gov_id,))
         if c.fetchone():
-            gid = "Government ID Already Registered. Please use a different Government ID"
-            return render_template('flash.html', gid=gid)
+            flash("Government ID Already Registered. Please use a different Government ID", 'danger')
+            return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(password)
 
-        
         try:
             c.execute('INSERT INTO accounts (username, password, gov_id, balance, dob, age, gender, email, phone, address, state, security_question, secanswer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                      (username, password, gov_id, initial_deposit, dob, age, gender, email, phone, address, state, security, secanswer))
+                      (username, hashed_password, gov_id, initial_deposit, dob, age, gender, email, phone, address, state, security, secanswer))
             conn.commit()
-            accCreat = 'Account created successfully! You can now log in.'
-            return render_template('flash.html', accCreat = accCreat)
+            flash('Account created successfully! You can now log in.', 'success')
+            return redirect(url_for('login'))
         except Exception as e:
             conn.rollback()
-            flash(f'Error occurred during registration: {str(e)}')
+            flash(f'Error occurred during registration: {str(e)}', 'danger')
         finally:
             conn.close()
 
     return render_template('register.html')
-
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -110,22 +95,18 @@ def login():
 
         conn = sqlite3.connect('atm.db')
         c = conn.cursor()
-
-        
-        c.execute('SELECT id, balance FROM accounts WHERE username = ? AND password = ?', (username, password))
+        c.execute('SELECT id, password FROM accounts WHERE username = ?', (username,))
         user = c.fetchone()
 
-        if user:
+        if user and check_password_hash(user[1], password):
             session['user_id'] = user[0]
-            fmessage = "Login Successfull!"
-            return render_template('flash.html', fmessage=fmessage)
+            flash("Login Successful!", "success")
+            return redirect(url_for('atm'))
         else:
-            loginfail = "Invalid credentials, please try again."
-            return render_template('flash.html', loginfail=loginfail)
+            flash("Invalid credentials, please try again.", "danger")
+            return redirect(url_for('login'))
 
     return render_template('login.html')
-
-
 
 @app.route('/atm', methods=['GET', 'POST'])
 def atm():
@@ -134,12 +115,9 @@ def atm():
 
     conn = sqlite3.connect('atm.db')
     c = conn.cursor()
-
-    
     c.execute('SELECT balance FROM accounts WHERE id = ?', (session['user_id'],))
     balance = c.fetchone()[0]
 
-    
     c.execute('SELECT date, amount FROM transactions WHERE user_id = ? AND type = "Deposit" ORDER BY date DESC LIMIT 5', (session['user_id'],))
     deposit_transactions = c.fetchall()
 
@@ -155,22 +133,20 @@ def atm():
         conn = sqlite3.connect('atm.db')
         c = conn.cursor()
 
-        
         if action == 'Deposit':
             new_balance = balance + amount
             c.execute('UPDATE accounts SET balance = ? WHERE id = ?', (new_balance, session['user_id']))
             c.execute('INSERT INTO transactions (user_id, amount, type, date) VALUES (?, ?, "Deposit", datetime("now"))', (session['user_id'], amount))
-            flash(f'Successfully deposited {amount}!')
-        
-        
+            flash(f'Successfully deposited {amount}!', 'success')
+
         elif action == 'Withdraw':
             if amount > balance:
-                flash(f'Error: Insufficient funds! You tried to withdraw {amount}, but your balance is only {balance}.')
+                flash(f'Error: Insufficient funds! You tried to withdraw {amount}, but your balance is only {balance}.', 'danger')
             else:
                 new_balance = balance - amount
                 c.execute('UPDATE accounts SET balance = ? WHERE id = ?', (new_balance, session['user_id']))
                 c.execute('INSERT INTO transactions (user_id, amount, type, date) VALUES (?, ?, "Withdraw", datetime("now"))', (session['user_id'], amount))
-                flash(f'Successfully withdrew {amount}!')
+                flash(f'Successfully withdrew {amount}!', 'success')
 
         conn.commit()
         conn.close()
@@ -178,7 +154,6 @@ def atm():
         return redirect(url_for('atm'))
 
     return render_template('atm.html', balance=balance, deposit_transactions=deposit_transactions, withdrawal_transactions=withdrawal_transactions)
-
 
 @app.route('/remove_account', methods=['GET', 'POST'])
 def remove_account():
@@ -188,58 +163,43 @@ def remove_account():
     user_id = session['user_id']
     conn = sqlite3.connect('atm.db')
     c = conn.cursor()
-
-    
     c.execute('SELECT balance FROM accounts WHERE id = ?', (user_id,))
     balance_row = c.fetchone()
     balance = balance_row[0] if balance_row else 0
 
     if request.method == 'POST':
-        
         target_username = request.form['transfer_account_username']
         target_password = request.form['transfer_account_password']
         target_gov_id = request.form['transfer_account_gov_id']
 
-        
-        c.execute(
-            'SELECT id, balance FROM accounts WHERE username = ? AND password = ? AND gov_id = ?',
-            (target_username, target_password, target_gov_id)
-        )
+        c.execute('SELECT id, balance FROM accounts WHERE username = ? AND password = ? AND gov_id = ?', (target_username, target_password, target_gov_id))
         target_account = c.fetchone()
 
         if not target_account:
-            flash('Target account information is incorrect. Please try again.')
+            flash('Target account information is incorrect. Please try again.', 'danger')
             conn.close()
             return redirect(url_for('remove_account'))
 
         target_account_id, target_balance = target_account
-
-        
         new_target_balance = target_balance + balance
         c.execute('UPDATE accounts SET balance = ? WHERE id = ?', (new_target_balance, target_account_id))
-
-        
         c.execute('DELETE FROM transactions WHERE user_id = ?', (user_id,))
         c.execute('DELETE FROM accounts WHERE id = ?', (user_id,))
 
         conn.commit()
         conn.close()
 
-        session.pop('user_id', None)  
-        rmessage = 'Your account has been removed and balance transferred successfully.'
-        return render_template('flash.html', rmessage=rmessage)
+        session.pop('user_id', None)
+        flash('Your account has been removed and balance transferred successfully.', 'success')
+        return redirect(url_for('index'))
 
     conn.close()
     return render_template('remove_account.html', balance=balance)
-
-
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
         username = request.form['username']
-
-        
         conn = sqlite3.connect('atm.db')
         c = conn.cursor()
         c.execute('SELECT security_question FROM accounts WHERE username = ?', (username,))
@@ -247,46 +207,45 @@ def forgot_password():
         conn.close()
 
         if question:
-            return render_template('security_question.html', username=username, security_question=question[0])
+            return render_template('security_question.html', question=question[0], username=username)
         else:
-            forgotun = 'Username Not Found.'
-            return render_template('flash.html', forgotun=forgotun)
+            flash("Username not found.", 'danger')
+            return redirect(url_for('forgot_password'))
 
     return render_template('forgot_password.html')
 
-@app.route('/verify_security_answer', methods=['POST'])
-def verify_security_answer():
-    username = request.form['username']
-    security_answer = request.form['security_answer']
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
+    if request.method == 'POST':
+        username = request.form['username']
+        answer = request.form['answer']
+        new_password = request.form['new_password']
 
-    conn = sqlite3.connect('atm.db')
-    c = conn.cursor()
-    c.execute('SELECT secanswer FROM accounts WHERE username = ?', (username,))
-    answer = c.fetchone()
-    
+        conn = sqlite3.connect('atm.db')
+        c = conn.cursor()
+        c.execute('SELECT secanswer FROM accounts WHERE username = ?', (username,))
+        stored_answer = c.fetchone()
 
-    if answer and answer[0].lower() == security_answer.lower():
-        
-        c.execute('SELECT id FROM accounts WHERE username = ?', (username,))
-        user_id = c.fetchone()[0]
-        session['user_id'] = user_id
-        forgotsuccess = 'Successfully Logged in using Security Question'
-        return render_template('flash.html', forgotsuccess=forgotsuccess)
-    else:
-        forgotfail = "Incorrect answer. Please try again."
-        return render_template('flash.html', forgotfail=forgotfail)
+        if stored_answer and stored_answer[0] == answer:
+            hashed_password = generate_password_hash(new_password)
+            c.execute('UPDATE accounts SET password = ? WHERE username = ?', (hashed_password, username))
+            conn.commit()
+            flash('Password reset successfully! You can now log in.', 'success')
+        else:
+            flash('Incorrect answer to the security question.', 'danger')
 
+        conn.close()
+        return redirect(url_for('login'))
 
-
-
+    return render_template('reset_password.html')
 
 
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
-    logoutmsg = 'You have been logged out.'
-    return render_template('flash.html', logoutmsg = logoutmsg)
+    flash('You have been logged out', 'success')
+    return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

@@ -103,12 +103,23 @@
         .logout{
             margin-top: 25%;
         }
+        .flash-message {
+            animation: fadeOut 3s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            99% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+
     </style>
 </head>
 
 <body>
     <div class="container">
         <!-- ATM Dashboard Section -->
+        {% include 'flash.html' %}
         <div class="dashboard-section">
             <h1>ATM Dashboard</h1>
             <p><strong>Your balance:</strong> ${{ balance }}</p>
@@ -198,6 +209,14 @@
             }
         });
     </script>
+    <script>
+        $(document).ready(function() {
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 3000); // Adjust the duration as needed
+        });
+    </script>
+    
 </body>
 
 </html>
