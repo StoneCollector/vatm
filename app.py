@@ -5,10 +5,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Secret key for session management
+app.secret_key = 'your_secret_key' 
 
 
-# Update the database initialization function to include the new field
+
 def init_db():
     conn = sqlite3.connect('atm.db')
     c = conn.cursor()
@@ -41,19 +41,17 @@ def init_db():
     conn.commit()
     conn.close()
 
-
-# Call this function to initialize the database
 init_db()
 
 
-# Route for the index page
+
 @app.route('/')
 def index():
     return render_template('index.html')
     
 
 
-# Register route for creating a new account with additional details
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -68,18 +66,18 @@ def register():
         state = request.form['state']
         security = request.form['security_question_1']
         secanswer = request.form['answer_1']
-        gov_id = request.form['gov_id']  # New field for Government ID
+        gov_id = request.form['gov_id']  
         initial_deposit = float(request.form['balance'])
 
         if not username or not password or not gov_id:
             flash('All fields are required.')
             return redirect(url_for('register'))
 
-        # Validation to ensure unique Government ID
+        
         conn = sqlite3.connect('atm.db')
         c = conn.cursor()
 
-        # Check if the Government ID already exists
+        
         c.execute('SELECT id FROM accounts WHERE gov_id = ?', (gov_id,))
         if c.fetchone():
             gid = "Government ID Already Registered. Please use a different Government ID"
@@ -87,7 +85,7 @@ def register():
 
         hashed_password = generate_password_hash(password)
 
-        # Insert the new account into the database
+        
         try:
             c.execute('INSERT INTO accounts (username, password, gov_id, balance, dob, age, gender, email, phone, address, state, security_question, secanswer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                       (username, password, gov_id, initial_deposit, dob, age, gender, email, phone, address, state, security, secanswer))
@@ -103,7 +101,7 @@ def register():
     return render_template('register.html')
 
 
-# Login route
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -113,7 +111,7 @@ def login():
         conn = sqlite3.connect('atm.db')
         c = conn.cursor()
 
-        # Check if the username and password match an existing account
+        
         c.execute('SELECT id, balance FROM accounts WHERE username = ? AND password = ?', (username, password))
         user = c.fetchone()
 
@@ -128,7 +126,7 @@ def login():
     return render_template('login.html')
 
 
-# ATM route to handle checking balance, deposits, and withdrawals with custom error for underflow
+
 @app.route('/atm', methods=['GET', 'POST'])
 def atm():
     if 'user_id' not in session:
@@ -137,11 +135,11 @@ def atm():
     conn = sqlite3.connect('atm.db')
     c = conn.cursor()
 
-    # Fetch the user's balance
+    
     c.execute('SELECT balance FROM accounts WHERE id = ?', (session['user_id'],))
     balance = c.fetchone()[0]
 
-    # Fetch recent deposit and withdrawal transactions (limit to 5 each)
+    
     c.execute('SELECT date, amount FROM transactions WHERE user_id = ? AND type = "Deposit" ORDER BY date DESC LIMIT 5', (session['user_id'],))
     deposit_transactions = c.fetchall()
 
@@ -157,14 +155,14 @@ def atm():
         conn = sqlite3.connect('atm.db')
         c = conn.cursor()
 
-        # Handle deposit
+        
         if action == 'Deposit':
             new_balance = balance + amount
             c.execute('UPDATE accounts SET balance = ? WHERE id = ?', (new_balance, session['user_id']))
             c.execute('INSERT INTO transactions (user_id, amount, type, date) VALUES (?, ?, "Deposit", datetime("now"))', (session['user_id'], amount))
             flash(f'Successfully deposited {amount}!')
         
-        # Handle withdrawal with underflow error check
+        
         elif action == 'Withdraw':
             if amount > balance:
                 flash(f'Error: Insufficient funds! You tried to withdraw {amount}, but your balance is only {balance}.')
@@ -191,18 +189,18 @@ def remove_account():
     conn = sqlite3.connect('atm.db')
     c = conn.cursor()
 
-    # Fetch the user's current balance
+    
     c.execute('SELECT balance FROM accounts WHERE id = ?', (user_id,))
     balance_row = c.fetchone()
     balance = balance_row[0] if balance_row else 0
 
     if request.method == 'POST':
-        # Get target account information from the form
+        
         target_username = request.form['transfer_account_username']
         target_password = request.form['transfer_account_password']
         target_gov_id = request.form['transfer_account_gov_id']
 
-        # Verify the target account credentials
+        
         c.execute(
             'SELECT id, balance FROM accounts WHERE username = ? AND password = ? AND gov_id = ?',
             (target_username, target_password, target_gov_id)
@@ -216,18 +214,18 @@ def remove_account():
 
         target_account_id, target_balance = target_account
 
-        # Transfer balance to the target account
+        
         new_target_balance = target_balance + balance
         c.execute('UPDATE accounts SET balance = ? WHERE id = ?', (new_target_balance, target_account_id))
 
-        # Delete the user’s account and associated transactions
+        
         c.execute('DELETE FROM transactions WHERE user_id = ?', (user_id,))
         c.execute('DELETE FROM accounts WHERE id = ?', (user_id,))
 
         conn.commit()
         conn.close()
 
-        session.pop('user_id', None)  # Log the user out after account removal
+        session.pop('user_id', None)  
         rmessage = 'Your account has been removed and balance transferred successfully.'
         return render_template('flash.html', rmessage=rmessage)
 
@@ -235,13 +233,13 @@ def remove_account():
     return render_template('remove_account.html', balance=balance)
 
 
-####### ONLY TESTING
+
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
         username = request.form['username']
 
-        # Fetch security question for given username
+        
         conn = sqlite3.connect('atm.db')
         c = conn.cursor()
         c.execute('SELECT security_question FROM accounts WHERE username = ?', (username,))
@@ -268,7 +266,7 @@ def verify_security_answer():
     
 
     if answer and answer[0].lower() == security_answer.lower():
-        # Log in the user and redirect to dashboard
+        
         c.execute('SELECT id FROM accounts WHERE username = ?', (username,))
         user_id = c.fetchone()[0]
         session['user_id'] = user_id
@@ -278,11 +276,11 @@ def verify_security_answer():
         forgotfail = "Incorrect answer. Please try again."
         return render_template('flash.html', forgotfail=forgotfail)
 
-####### ONLY TESTING!!!!
 
 
 
-# Logout route
+
+
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)

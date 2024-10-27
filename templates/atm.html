@@ -194,7 +194,7 @@
     <script>
         window.addEventListener("pageshow", function(event) {
             if (event.persisted) {
-                window.location.reload();  // Forces a full reload if the page was loaded from the cache
+                window.location.reload(); //force reload so that this shit wont keep the login session on back
             }
         });
     </script>
