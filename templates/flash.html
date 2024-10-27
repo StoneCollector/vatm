@@ -1,0 +1,72 @@
+{% if fmessage %}
+<script>
+    window.onload = function() {
+        alert("{{ fmessage }}");
+        window.location.href = "{{ url_for('atm') }}";
+    };
+</script>
+{% endif %}
+{% if accCreat %}
+<script>
+    window.onload = function() {
+        alert("{{ accCreat }}");
+        window.location.href = "{{ url_for('login') }}";
+    };
+</script>
+{% endif %}
+{% if gid %}
+<script>
+    window.onload = function() {
+        alert("{{ gid }}");
+        window.location.href = "{{ url_for('register') }}";
+    };
+</script>
+{% endif %}
+{% if loginfail %}
+<script>
+    window.onload = function() {
+        alert("{{ loginfail }}");
+        window.location.href = "{{ url_for('login') }}";
+    };
+</script>
+{% endif %}
+{% if rmessage %}
+<script>
+    window.onload = function() {
+        alert("{{ rmessage }}");
+        window.location.href = "{{ url_for('login') }}";
+    };
+</script>
+{% endif %}
+{% if logoutmsg %}
+<script>
+    window.onload = function() {
+        alert("{{ logoutmsg }}");
+        window.location.href = "{{ url_for('login') }}";
+    };
+</script>
+{% endif %}
+{% if forgotun %}
+<script>
+    window.onload = function() {
+        alert("{{ forgotun }}");
+        window.location.href = "{{ url_for('forgot_password') }}";
+    };
+</script>
+{% endif %}
+{% if forgotsuccess %}
+<script>
+    window.onload = function() {
+        alert("{{ forgotsuccess }}");
+        window.location.href = "{{ url_for('atm') }}";
+    };
+</script>
+{% endif %}
+{% if forgotfail %}
+<script>
+    window.onload = function() {
+        alert("{{ forgotfail }}");
+        window.location.href = "{{ url_for('forgot_password') }}";
+    };
+</script>
+{% endif %}
